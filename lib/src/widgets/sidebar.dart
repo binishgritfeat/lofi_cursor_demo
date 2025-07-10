@@ -9,9 +9,30 @@ class Sidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tracks = ref.watch(trackListProvider);
     final audioService = ref.watch(audioServiceProvider);
     final playingIndex = audioService.currentIndex;
+
+    final glassBg = isDark
+        ? [
+            const Color(0xFF23243a),
+            const Color(0xFF23243a),
+            const Color(0xFF23243a),
+            const Color(0xFF23243a),
+          ]
+        : [
+            const Color(0xFFfbcfe8),
+            const Color(0xFFddd6fe),
+            const Color(0xFFa7f3d0),
+            const Color(0xFFbae6fd),
+          ];
+    final glassOpacity = isDark ? 0.22 : 0.18;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.grey.shade800;
+    final selectedBg = isDark ? Colors.white.withOpacity(0.18) : Colors.white.withOpacity(0.32);
+    final unselectedBg = isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.12);
+    final selectedShadow = isDark ? Colors.purple.withOpacity(0.18) : Colors.purple.withOpacity(0.10);
 
     return Drawer(
       child: Stack(
@@ -19,14 +40,9 @@ class Sidebar extends ConsumerWidget {
           // Glassmorphic pastel gradient background
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFfbcfe8), // pastel pink
-                    Color(0xFFddd6fe), // pastel purple
-                    Color(0xFFa7f3d0), // pastel teal
-                    Color(0xFFbae6fd), // pastel light blue
-                  ],
+                  colors: glassBg,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -34,7 +50,7 @@ class Sidebar extends ConsumerWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                 child: Container(
-                  color: Colors.white.withOpacity(0.18),
+                  color: isDark ? Colors.black.withOpacity(glassOpacity) : Colors.white.withOpacity(glassOpacity),
                 ),
               ),
             ),
@@ -44,17 +60,18 @@ class Sidebar extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'Track List',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
                   if (tracks.isEmpty)
-                    const _ShimmerList()
+                    _ShimmerList(isDark: isDark)
                   else
                     Expanded(
                       child: ReorderableListView.builder(
@@ -73,7 +90,6 @@ class Sidebar extends ConsumerWidget {
                               audioService.play();
                             }
                           }
-                          // If the index didn't change, do nothing: playback continues at the same position!
                         },
                         buildDefaultDragHandles: false,
                         itemBuilder: (context, i) {
@@ -83,15 +99,21 @@ class Sidebar extends ConsumerWidget {
                             key: ValueKey(track.id),
                             track: track,
                             selected: isSelected,
-                            onTap: () {
+                            onTap: () async {
                               ref.read(selectedTrackProvider.notifier).select(i);
-                              ref.read(audioServiceProvider).selectTrack(i);
+                              await ref.read(audioServiceProvider).selectTrack(i, autoPlay: true);
                               Navigator.of(context).pop();
                             },
                             dragHandle: ReorderableDragStartListener(
                               index: i,
-                              child: Icon(Icons.drag_handle, color: Colors.grey[400]),
+                              child: Icon(Icons.drag_handle, color: isDark ? Colors.white38 : Colors.grey[400]),
                             ),
+                            isDark: isDark,
+                            textColor: textColor,
+                            subTextColor: subTextColor,
+                            selectedBg: selectedBg,
+                            unselectedBg: unselectedBg,
+                            selectedShadow: selectedShadow,
                           );
                         },
                       ),
@@ -111,7 +133,13 @@ class _SidebarTrackTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final Widget dragHandle;
-  const _SidebarTrackTile({Key? key, required this.track, required this.selected, required this.onTap, required this.dragHandle}) : super(key: key);
+  final bool isDark;
+  final Color textColor;
+  final Color subTextColor;
+  final Color selectedBg;
+  final Color unselectedBg;
+  final Color selectedShadow;
+  const _SidebarTrackTile({Key? key, required this.track, required this.selected, required this.onTap, required this.dragHandle, required this.isDark, required this.textColor, required this.subTextColor, required this.selectedBg, required this.unselectedBg, required this.selectedShadow}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -119,18 +147,17 @@ class _SidebarTrackTile extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: selected ? Colors.white.withOpacity(0.32) : Colors.white.withOpacity(0.12),
+        color: selected ? selectedBg : unselectedBg,
         borderRadius: BorderRadius.circular(18),
         boxShadow: selected
             ? [
                 BoxShadow(
-                  color: Colors.purple.withOpacity(0.10),
+                  color: selectedShadow,
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
               ]
             : [],
-        // Removed border for cleaner look
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -145,7 +172,7 @@ class _SidebarTrackTile extends StatelessWidget {
           style: TextStyle(
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 16,
-            color: selected ? Colors.black : Colors.black87,
+            color: textColor,
           ),
         ),
         subtitle: Text(
@@ -155,7 +182,7 @@ class _SidebarTrackTile extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w400,
             fontSize: 13,
-            color: Colors.grey[800],
+            color: subTextColor,
           ),
         ),
         onTap: onTap,
@@ -166,18 +193,20 @@ class _SidebarTrackTile extends StatelessWidget {
 }
 
 class _ShimmerList extends StatelessWidget {
-  const _ShimmerList();
+  final bool isDark;
+  const _ShimmerList({this.isDark = false});
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: List.generate(6, (i) => _AnimatedShimmerTile(delay: i * 120)),
+      children: List.generate(6, (i) => _AnimatedShimmerTile(delay: i * 120, isDark: isDark)),
     );
   }
 }
 
 class _AnimatedShimmerTile extends StatefulWidget {
   final int delay;
-  const _AnimatedShimmerTile({required this.delay});
+  final bool isDark;
+  const _AnimatedShimmerTile({required this.delay, this.isDark = false});
   @override
   State<_AnimatedShimmerTile> createState() => _AnimatedShimmerTileState();
 }
@@ -209,6 +238,12 @@ class _AnimatedShimmerTileState extends State<_AnimatedShimmerTile> with SingleT
 
   @override
   Widget build(BuildContext context) {
+    final pastel1 = widget.isDark ? const Color(0xFF7f5af0).withOpacity(0.7) : const Color(0xFFfbcfe8).withOpacity(0.7);
+    final pastel2 = widget.isDark ? const Color(0xFF2cb67d).withOpacity(0.6) : const Color(0xFFa7f3d0).withOpacity(0.5);
+    final pastel3 = widget.isDark ? const Color(0xFF3a86ff).withOpacity(0.6) : const Color(0xFFbae6fd).withOpacity(0.5);
+    final pastel4 = widget.isDark ? const Color(0xFFffbe0b).withOpacity(0.5) : const Color(0xFFddd6fe).withOpacity(0.4);
+    final base = widget.isDark ? Colors.white.withOpacity(0.10) : Colors.white.withOpacity(0.45);
+    final base2 = widget.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.35);
     return FadeTransition(
       opacity: _fadeAnim,
       child: Padding(
@@ -219,11 +254,8 @@ class _AnimatedShimmerTileState extends State<_AnimatedShimmerTile> with SingleT
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFfbcfe8),
-                    Color(0xFFa7f3d0),
-                  ],
+                gradient: LinearGradient(
+                  colors: [pastel1, pastel2],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -239,11 +271,8 @@ class _AnimatedShimmerTileState extends State<_AnimatedShimmerTile> with SingleT
                     height: 12,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFddd6fe),
-                          Color(0xFFbae6fd),
-                        ],
+                      gradient: LinearGradient(
+                        colors: [pastel3, pastel4],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
@@ -255,7 +284,7 @@ class _AnimatedShimmerTileState extends State<_AnimatedShimmerTile> with SingleT
                     height: 10,
                     width: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
+                      color: base,
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
