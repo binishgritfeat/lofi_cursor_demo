@@ -21,12 +21,12 @@ jobs:
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release
+        run: flutter build web --release --base-href /lofi_cursor_demo/
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages 
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
           publish_branch: gh-pages
-          force_orphan: true 
+          force_orphan: true

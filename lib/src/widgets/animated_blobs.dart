@@ -32,9 +32,30 @@ class _AnimatedBlobsState extends State<AnimatedBlobs> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Use deeper, more saturated colors and higher opacity in dark mode
+    final blob1Color = isDark
+        ? const Color(0xFF7f5af0).withOpacity(0.70) // deep purple
+        : const Color(0xFFfbcfe8).withOpacity(0.38);
+    final blob2Color = isDark
+        ? const Color(0xFF2cb67d).withOpacity(0.65) // deep teal
+        : const Color(0xFFa7f3d0).withOpacity(0.34);
+    final blob3Color = isDark
+        ? const Color(0xFF3a86ff).withOpacity(0.68) // deep blue
+        : const Color(0xFFbae6fd).withOpacity(0.36);
+    final blob4Color = isDark
+        ? const Color(0xFFffbe0b).withOpacity(0.60) // deep yellow
+        : const Color(0xFFddd6fe).withOpacity(0.32);
+
     return IgnorePointer(
       child: Stack(
         children: [
+          if (isDark)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.18), // subtle dark overlay
+              ),
+            ),
           // Blob 1
           AnimatedBuilder(
             animation: _controller1,
@@ -44,7 +65,7 @@ class _AnimatedBlobsState extends State<AnimatedBlobs> with TickerProviderStateM
                 top: 80 + 30 * cos(_controller1.value * 2 * pi),
                 child: _Blob(
                   size: 320,
-                  color: const Color(0xFFfbcfe8).withOpacity(0.38),
+                  color: blob1Color,
                   blur: 60,
                 ),
               );
@@ -59,7 +80,7 @@ class _AnimatedBlobsState extends State<AnimatedBlobs> with TickerProviderStateM
                 top: 180 + 40 * sin(_controller2.value * 2 * pi),
                 child: _Blob(
                   size: 260,
-                  color: const Color(0xFFa7f3d0).withOpacity(0.34),
+                  color: blob2Color,
                   blur: 48,
                 ),
               );
@@ -74,7 +95,7 @@ class _AnimatedBlobsState extends State<AnimatedBlobs> with TickerProviderStateM
                 bottom: 60 + 30 * sin(_controller3.value * 2 * pi),
                 child: _Blob(
                   size: 280,
-                  color: const Color(0xFFbae6fd).withOpacity(0.36),
+                  color: blob3Color,
                   blur: 54,
                 ),
               );
@@ -89,7 +110,7 @@ class _AnimatedBlobsState extends State<AnimatedBlobs> with TickerProviderStateM
                 bottom: 100 + 40 * cos(_controller2.value * 2 * pi),
                 child: _Blob(
                   size: 200,
-                  color: const Color(0xFFddd6fe).withOpacity(0.32),
+                  color: blob4Color,
                   blur: 40,
                 ),
               );

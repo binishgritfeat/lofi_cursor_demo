@@ -13,7 +13,12 @@ class AudioService extends ChangeNotifier {
   AudioService() {
     _player.positionStream.listen((_) => notifyListeners());
     _player.durationStream.listen((_) => notifyListeners());
-    _player.playerStateStream.listen((_) => notifyListeners());
+    _player.playerStateStream.listen((state) {
+      notifyListeners();
+      if (state.processingState == ProcessingState.completed) {
+        next();
+      }
+    });
   }
 
   AudioPlayer get player => _player;
@@ -49,10 +54,13 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectTrack(int index) async {
+  Future<void> selectTrack(int index, {bool autoPlay = false}) async {
     if (index >= 0 && index < _tracks.length) {
       _currentIndex = index;
-      await _loadTrack(_tracks[index]);
+      await _loadTrack(_tracks[index], autoPause: !autoPlay);
+      if (autoPlay) {
+        await _player.play();
+      }
       notifyListeners();
     }
   }

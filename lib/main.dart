@@ -96,7 +96,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-                  
+                    title: const Text( 
+                      'LofiMusic',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 22,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
                     backgroundColor: Colors.transparent,
                     elevation: 0,
                     actions: [
