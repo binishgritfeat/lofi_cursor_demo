@@ -19,6 +19,11 @@ class AudioService extends ChangeNotifier {
         next();
       }
     });
+    
+    // Add listener for rain player state changes
+    _rainPlayer.playerStateStream.listen((state) {
+      notifyListeners();
+    });
   }
 
   AudioPlayer get player => _player;
@@ -26,6 +31,7 @@ class AudioService extends ChangeNotifier {
   int get currentIndex => _currentIndex;
   bool get isPlaying => _player.playing;
   bool get rainOn => _rainOn;
+  bool get isRainPlaying => _rainPlayer.playing;
   Duration get position => _player.position;
   Duration get duration => _player.duration ?? Duration.zero;
   List<Track> get tracks => _tracks;
@@ -105,18 +111,57 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleRain() async {
-    if (_rainOn) {
-      await _rainPlayer.pause();
-      await _rainPlayer.seek(Duration.zero);
-    } else {
-      await _rainPlayer.setAsset('assets/rain.mp3');
+  Future<void> _initializeRainPlayer() async {
+    try {
+      print('Initializing rain player...');
+      await _rainPlayer.setAsset('assets/sounds/rain.mp3');
       await _rainPlayer.setLoopMode(LoopMode.one);
       await _rainPlayer.setVolume(0.3);
-      await _rainPlayer.play();
+      print('Rain player initialized successfully');
+    } catch (e) {
+      print('Error initializing rain player: $e');
     }
-    _rainOn = !_rainOn;
-    notifyListeners();
+  }
+
+  Future<void> toggleRain() async {
+    try {
+      print('Toggle rain called. Current state: $_rainOn, isRainPlaying: ${_rainPlayer.playing}');
+      
+      if (_rainOn) {
+        // Turn off rain
+        print('Turning off rain...');
+        await _rainPlayer.pause();
+        await _rainPlayer.seek(Duration.zero);
+        _rainOn = false;
+        print('Rain turned off');
+      } else {
+        // Turn on rain
+        print('Turning on rain...');
+        
+        // If this is the first time, initialize the player
+        if (_rainPlayer.audioSource == null) {
+          await _initializeRainPlayer();
+        }
+        
+        print('Playing rain...');
+        await _rainPlayer.play();
+        
+        // Wait a moment and check if it's actually playing
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (_rainPlayer.playing) {
+          print('Rain is playing successfully');
+          _rainOn = true;
+        } else {
+          print('Rain failed to start playing');
+          _rainOn = false;
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Error in toggleRain: $e');
+      _rainOn = false;
+      notifyListeners();
+    }
   }
 
   @override

@@ -107,6 +107,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     backgroundColor: Colors.transparent,
                     elevation: 0,
                     actions: [
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final audioService = ref.watch(audioServiceProvider);
+                          return IconButton(
+                            icon: Icon(
+                              audioService.rainOn ? Icons.water_drop : Icons.water_drop_outlined,
+                              color: audioService.rainOn ? Colors.blue : null,
+                            ),
+                            tooltip: 'Toggle Rain Sound',
+                            onPressed: () {
+                              ref.read(audioServiceProvider).toggleRain();
+                            },
+                          );
+                        },
+                      ),
                       IconButton(
                         icon: const Icon(Icons.brightness_6),
                         onPressed: () {
